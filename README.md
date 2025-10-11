@@ -20,6 +20,11 @@ We use merge_nclt.py and merge_oxford.py to generate local scenes for data augme
 - hercules_radar_bev.yaml   radar 的train/test 文件
 
 ## train
+
+1. 更改配置文件 选择`lidar/radar` 对应  `hercules_bev.yaml/hercules_radar_bev.yaml`
+2. 修改train_bev.py加载配置文件部分`conf = OmegaConf.load('cfgs/hercules_bev.yaml')`
+3. 终端进行分布式训练
+
 ```python
 accelerate launch --num_processes 3 --mixed_precision fp16 train_bev.py
 ```
@@ -27,6 +32,11 @@ accelerate launch --num_processes 3 --mixed_precision fp16 train_bev.py
 - 如果出现多进程训练端口被占用的情况 可以用 `--main_process_port 29501` 或任何一个大于 1024 且小于 65535 的端口
 
 ## test
+
+1. 更改配置文件`权重epoch部分` 选择`lidar/radar` 对应  `hercules_bev.yaml/hercules_radar_bev.yaml`
+2. 修改test_bev.py加载配置文件部分`conf = OmegaConf.load('cfgs/hercules_bev.yaml')`
+3. 终端进行分布式训练
+
 ```python
 python test_bev.py
 ```
