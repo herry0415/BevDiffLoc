@@ -3,6 +3,14 @@ Run the contrastive experiment for Hercules using this model
 
 # Environment setup
 参考diffloc的环境安装即可
+- 按照给定的环境安装一下torch和其他的库。然后pip给出的包
+- 安装torchsparse 的时候要去官方下载一下zip压缩包 然后放进去 运行`pip install -e .` 来安装
+- 安装torch_scatter的时候
+    - 需要去一个官网https://data.pyg.org/whl/下载一个包  手动安装一下
+    - 找到一个对应版本包进行下载 torch_scatter-2.0.9-cp38-linux_x86
+- pytorch3d 也是需要去官网下载git 文件。然后pip install -e .
+- spvnas要放在diffloc主文件夹下
+- PYTHONPATH  `export PYTHONPATH=/home/ldq/code/DiffLoc-main/spvnas:/home/ldq/code/DiffLoc-main`
 
 # Data prepare
 
