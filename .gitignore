@@ -1,0 +1,4 @@
+# 忽略日志和输出
+*.log
+log/
+log_radar/
