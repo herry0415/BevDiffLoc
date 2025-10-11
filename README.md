@@ -13,7 +13,7 @@ Run the contrastive experiment for Hercules using this model
 - PYTHONPATH  `export PYTHONPATH=/home/ldq/code/DiffLoc-main/spvnas:/home/ldq/code/DiffLoc-main`
 
 # Data prepare
-
+We use merge_nclt.py and merge_oxford.py to generate local scenes for data augmentation.
 # config 文件
 在`train/test` 之前要修改`hercules_bev.yaml/hercules_radar_bev.yaml`的参数
 - hercules_bev.yaml   lidar 的train/test 文件
