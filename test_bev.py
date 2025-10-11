@@ -207,7 +207,7 @@ def save_test_details(cfg, exp_dir):
 
 if __name__ == '__main__':
     # oxford_bev.yaml / nclt_bev.yaml / 
-    conf = OmegaConf.load('cfgs/hercules_bev.yaml')
+    conf = OmegaConf.load('cfgs/hercules_radar_bev.yaml')
     LOG_FOUT = open(os.path.join(conf.exp_dir, 'log.txt'), 'w')
     LOG_FOUT.write(str(conf) + '\n')
     val_writer = SummaryWriter(os.path.join(conf.exp_dir, 'valid'))

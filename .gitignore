@@ -1,4 +1,5 @@
 # 忽略日志和输出
 *.log
+*.pth
 log/
 log_radar/

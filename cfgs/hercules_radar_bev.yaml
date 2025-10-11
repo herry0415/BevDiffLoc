@@ -1,5 +1,5 @@
 #! radar 系列
-ckpt: 'log_radar/ckpt_000110.pth'
+ckpt: 'log_radar/ckpt_000060.pth'
 seed: 7
 exp_name: 'radar_bev'
 exp_dir: 'log_radar'
