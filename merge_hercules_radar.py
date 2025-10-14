@@ -31,7 +31,6 @@ class Hercules_merge_radar(data.Dataset):
 
         data_path =  config.train.dataroot
 
-        sequence_name='Library'
         self.sequence_name = sequence_name #['Library', 'Mountain', 'Sports']
 
         self.data_dir = os.path.join(data_path, sequence_name)
@@ -125,7 +124,7 @@ class Hercules_merge_radar(data.Dataset):
         mapping = {
             'Library': (['Library_01_Day','Library_02_Night'], ['Library_03_Day']),
             'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
-            'Sports': (['Complex_01_Day','Complex_03_Day'], ['Complex_02_Night'])
+            'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
         }
         return mapping[sequence_name][0] if train else mapping[sequence_name][1]
 
@@ -156,7 +155,9 @@ class Hercules_merge_radar(data.Dataset):
 if __name__ == '__main__':
     cfg = OmegaConf.load('cfgs/hercules_bev.yaml')
     # 假设你有一个配置对象 cfg
-    dataset = Hercules_merge_radar(config=cfg, split='train', sequence_name='Library')
+    this_name =  'Sports' # ['Library', 'Mountain', 'Sports']
+
+    dataset = Hercules_merge_radar(config=cfg, split='train', sequence_name=this_name) # ['Library', 'Mountain', 'Sports']
 
     merged_pointcloud = o3d.geometry.PointCloud()
     merged_x = []
@@ -164,11 +165,11 @@ if __name__ == '__main__':
     # all_pointcloud = []
     all_poses = []
     voxel_size = 0.4
-    image_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev_radar/'  # 更新保存路径 
-    # image_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev/'  # 更新保存路径 
+    image_path = f'/home/data/ldq/HeRCULES/{this_name}/new_merge_bev_radar/'  #todo  更新保存路径 
+    # image_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev/'  #todo 更新保存路径 
 
-    pose_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev_radar.txt'  # 更新pose保存路径
-    # pose_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev.txt'  # 更新pose保存路径
+    pose_path = f'/home/data/ldq/HeRCULES/{this_name}/new_merge_bev_radar.txt'  #todo 更新pose保存路径
+    # pose_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev.txt'  #todo  更新pose保存路径
 
     with open(pose_path, 'w', encoding='utf-8'):
         pass 

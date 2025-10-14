@@ -10,7 +10,7 @@ import pstats
 import cProfile
 import torch.nn as nn
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2, 3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2, 3"
 # os.environ["MAIN_PROCESS_PORT"] = "29501" 
 from hydra.utils import instantiate
 import datetime
@@ -347,6 +347,6 @@ def save_train_details_partial(cfg, exp_dir):
 if __name__ == '__main__':
     # oxford_bev.yaml / nclt_bev.yaml
     # conf = OmegaConf.load('cfgs/oxford_bev.yaml')
-    conf = OmegaConf.load('cfgs/hercules_bev.yaml')
+    conf = OmegaConf.load('cfgs/hercules_radar_bev.yaml')
     # conf = OmegaConf.load('cfgs/nclt_bev.yaml')
     train_fn(conf)

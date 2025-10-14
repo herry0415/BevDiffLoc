@@ -32,13 +32,13 @@ def test(cfg: DictConfig):
     # NOTE carefully double check the instruction from huggingface!
     global TOTAL_ITERATIONS
     OmegaConf.set_struct(cfg, False)
-
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Instantiate the model
     model = instantiate(cfg.MODEL, _recursive_=False)
 
     eval_dataset = MF_bev(cfg.train.dataset, cfg, split='eval')
-
+    epoch = int(cfg.ckpt.split('/')[-1].split('_')[-1].split('.')[0]) #! 抽取出来当前的epoch
     ckpt_path = os.path.join(cfg.ckpt)
     if os.path.isfile(ckpt_path):
         checkpoint = torch.load(ckpt_path, map_location=device)
@@ -91,7 +91,7 @@ def test(cfg: DictConfig):
 
     T1 = time.time()
     
-    file_path = save_test_details(cfg, cfg.exp_dir)
+    file_path = save_test_details(cfg, cfg.exp_dir, epoch = epoch)
 
     for step, batch in enumerate(eval_dataloader):
         val_pose = batch["pose"][:, -1, :]
@@ -125,6 +125,8 @@ def test(cfg: DictConfig):
         log_string('MedianTE(m): %f' % np.median(error_t[start_idx:end_idx], axis=0))
         log_string('MedianRE(degrees): %f' % np.median(error_q[start_idx:end_idx], axis=0))
 
+
+
     T2 = time.time()
     print("time:", T2-T1)
     
@@ -137,6 +139,18 @@ def test(cfg: DictConfig):
     log_string('Mean Orientation Error(degrees): %f' % mean_ARE)
     log_string('Median Position Error(m): %f' % median_ATE)
     log_string('Median Orientation Error(degrees): %f' % median_ARE)
+
+    try:
+        with open(file_path, 'a') as f:
+            f.write("\n===== Summary Results =====\n")
+            f.write(f"Mean Position Error(m): {mean_ATE:.6f}\n")
+            f.write(f"Mean Orientation Error(degrees): {mean_ARE:.6f}\n")
+            f.write(f"Median Position Error(m): {median_ATE:.6f}\n")
+            f.write(f"Median Orientation Error(degrees): {median_ARE:.6f}\n")
+        log_string(f"Saved summary to: {file_path}")
+    except Exception as e:
+        log_string(f"Failed to save summary to {file_path}: {e}")
+
 
     val_writer.add_scalar('MeanATE', mean_ATE, TOTAL_ITERATIONS)
     val_writer.add_scalar('MeanARE', mean_ARE, TOTAL_ITERATIONS)
@@ -151,7 +165,8 @@ def test(cfg: DictConfig):
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.plot(gt_pose[0, 1], gt_pose[0, 0], 'y*', markersize=10)
-    image_filename = os.path.join(os.path.expanduser(cfg.exp_dir), '{:s}.png'.format('trajectory'))
+    # image_filename = os.path.join(os.path.expanduser(cfg.exp_dir), '{:s}.png'.format('trajectory'))
+    image_filename = os.path.join(os.path.expanduser(cfg.exp_dir), f'epoch{epoch}_trajectory.png')
     fig.savefig(image_filename, dpi=200, bbox_inches='tight')
 
     # save error and trajectory
@@ -170,12 +185,12 @@ def test(cfg: DictConfig):
     np.savetxt(pred_q_filename, pred_rotation, fmt='%8.7f')
     np.savetxt(gt_q_filename, gt_rotation, fmt='%8.7f')
 
-def save_test_details(cfg, exp_dir):
+def save_test_details(cfg, exp_dir, epoch):
     """
     保存测试关键信息到带时间戳的 test_details.txt
     """
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_path = os.path.join(exp_dir, f"{ts}_test_details.txt")
+    file_path = os.path.join(exp_dir, f"epoch{epoch}_{ts}_test_details.txt")
     
     with open(file_path, 'w') as f:
         f.write(f"===== Test Details =====\n")
@@ -213,4 +228,8 @@ if __name__ == '__main__':
     val_writer = SummaryWriter(os.path.join(conf.exp_dir, 'valid'))
     # 5 cpu core
     torch.set_num_threads(5)
+    start_time = time.time()
     test(conf)
+    end_time = time.time()
+    total_time = end_time - start_time
+    print(f"\nTotal testing time: {total_time:.2f} seconds ({total_time/60:.2f} minutes)")

@@ -156,8 +156,9 @@ class Hercules_merge(data.Dataset):
 if __name__ == '__main__':
     cfg = OmegaConf.load('cfgs/hercules_bev.yaml')
     # 假设你有一个配置对象 cfg
-    dataset = Hercules_merge(config=cfg, split='train', sequence_name='Library')
-
+    this_name =  'Sports' # ['Library', 'Mountain', 'Sports']
+    dataset = Hercules_merge(config=cfg, split='train', sequence_name=this_name)
+    
     merged_pointcloud = o3d.geometry.PointCloud()
     merged_x = []
     merged_y = []

@@ -1,0 +1,26 @@
+===== Test Details =====
+Timestamp: 20251014_164403
+
+ckpt: log_radar_Mountain/ckpt_000055.pth
+seed: 7
+exp_name: radar_bev
+exp_dir: log_radar_Mountain
+sampling_timesteps: 10
+
+bev_fold: new_merge_bev_radar
+bev_poses_path: new_merge_bev_radar.txt
+
+train:
+    dataset: Hercules_radar
+    sequence: Mountain
+    dataroot: /home/data/ldq/HeRCULES/
+    val_batch_size: 16
+    num_workers: 16
+    persistent_workers: True
+    pin_memory: True
+
+===== Summary Results =====
+Mean Position Error(m): 95.349996
+Mean Orientation Error(degrees): 29.619680
+Median Position Error(m): 50.646503
+Median Orientation Error(degrees): 10.762838

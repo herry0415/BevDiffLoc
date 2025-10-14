@@ -1,5 +1,5 @@
 #! lidar 系列
-ckpt: 'log/ckpt_000110.pth' #todo  epoch_weights root
+ckpt: 'log/ckpt_000150.pth' #todo  epoch_weights root
 seed: 7
 exp_name: 'lidar_bev' #todo   lidar_bev // lidar_bev
 exp_dir: 'log' #todo  epoch_weights root
@@ -19,13 +19,15 @@ bev_poses_path: 'new_merge_bev.txt' #todo 切换lidar/radar
 train: 
     dataset: 'Hercules' #todo  需要修改 Hercules_radar / Hercules
     # dataset: 'Hercules' #todo  需要修改 Hercules_radar / Hercules
+    sequence: 'Library' #todo 需要改
+    dataroot: '/home/data/ldq/HeRCULES/'
     batch_size: 16
     val_batch_size: 16
     image_size: [32, 32]
     original_image_size: [32, 32]
     steps: 3
     skip: 2
-    use_merge: False
+    use_merge: True #todo usemerge 可以用几张卡
     merge_num: 1
     restart_num: 5
     lr: 5e-4
@@ -36,15 +38,12 @@ train:
     eval_interval: 5  #! 模型评估的间隔
     print_interval: 50
     persistent_workers: True
-
     pin_memory: True
     clip_grad: 1.0
-
     cudnnbenchmark: True
 
     warmup_sche: True
-    sequence: 'Library'
-    dataroot: '/home/data/ldq/HeRCULES/'
+
 
 profile: False
 

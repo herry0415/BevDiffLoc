@@ -30,10 +30,10 @@ class MF_bev(data.Dataset):
         elif dataset == 'NCLT':
             self.dset = NCLT_BEV(config, split)
         elif dataset == 'Hercules':
-            self.dset = Hercules_BEV(config, split)
+            self.dset = Hercules_BEV(config, split, config.train.sequence)
             print('Loading Hercules_lidar dataset.......')
         elif dataset == 'Hercules_radar':
-            self.dset = Hercules_BEV_Radar(config, split)
+            self.dset = Hercules_BEV_Radar(config, split, config.train.sequence)
             print('Loading Hercules_radar dataset.......')
 
         else:
