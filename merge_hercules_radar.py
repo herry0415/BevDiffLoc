@@ -17,6 +17,7 @@ from datasets.augmentor import Augmentor, AugmentParams
 from datasets.robotcar_sdk.python.transform import build_se3_transform, euler_to_so3
 import time
 import math
+# !merge_hercules.py 和 merge_hercules_radar.py进行了标准化序列处理
 
 BASE_DIR = osp.dirname(osp.abspath(__file__))
 
