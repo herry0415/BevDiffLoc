@@ -1,8 +1,8 @@
 #! lidar 系列
-ckpt: 'log_Library/ckpt_000145.pth' #todo  epoch_weights root
+ckpt: 'log_Mountain/ckpt_000120.pth' #todo  epoch_weights root
 seed: 7
 exp_name: 'lidar_bev' #todo   lidar_bev // lidar_bev #['Library', 'Mountain', 'Sports']
-exp_dir: 'log_Library' #todo  epoch_weights root
+exp_dir: 'log_Mountain' #todo  epoch_weights root
 sampling_timesteps: 10
 bev_fold: 'merge_bev' #todo  切换lidar/radar
 bev_poses_path: 'merge_bev.txt' #todo 切换lidar/radar
@@ -19,7 +19,7 @@ bev_poses_path: 'merge_bev.txt' #todo 切换lidar/radar
 train: 
     dataset: 'Hercules' #todo  需要修改 Hercules_radar / Hercules
     # dataset: 'Hercules'
-    sequence: 'Library' #todo 需要改
+    sequence: 'Mountain' #todo 需要改
     dataroot: '/home/data/ldq/HeRCULES/'
     batch_size: 16
     val_batch_size: 16

@@ -11,8 +11,10 @@ Run the contrastive experiment for Hercules using this model
 - pytorch3d 也是去官网下载git 文件。然后pip install -e .
 - spvnas要放在diffloc主文件夹下
 - PYTHONPATH  `export PYTHONPATH=/home/ldq/code/DiffLoc-main/spvnas:/home/ldq/code/DiffLoc-main`
-- MinkowskiEngine
+- MinkowskiEngine 可能需要降低`numpy==1.22.0`和`setuptools==59.5.0`
 ```
+pip install setuptools==59.5.0
+pip install numpy==1.22.0
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
 pip install -e . 

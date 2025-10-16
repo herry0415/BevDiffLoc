@@ -11,7 +11,7 @@ import datetime
 import os.path as osp
 matplotlib.use('Agg')
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 from hydra.utils import instantiate
 from omegaconf import OmegaConf, DictConfig
 from utils.train_util import *
