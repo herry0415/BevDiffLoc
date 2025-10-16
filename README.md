@@ -34,7 +34,7 @@ We use merge_nclt.py and merge_oxford.py to generate local scenes for data augme
   - 序列名 `train.sequence`
   - 权重路径 `exp_name 和 ckpt `
   - 数据集类别 `train.dataset`  `'Hercules_radar'`加载radar数据集类  `'Hercules'` 加载lidar数据集类
-  - radar  `use_merge: False`  lidar `use_merge: True`
+  - <span style="color: red">radar  `use_merge: False`  lidar `use_merge: True`</span>
 
 ## 2. 修改train_bev.py加载配置文件部分
 `conf = OmegaConf.load('cfgs/hercules_bev.yaml')`
