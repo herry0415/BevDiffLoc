@@ -1,17 +1,17 @@
 #! radar 系列
-ckpt: 'log_radar_Mountain/ckpt_000055.pth' #!todo 切换不同序列对应的保存文件夹
+ckpt: 'log_radar_Sports/ckpt_000135.pth' #!todo1 切换不同序列对应的保存文件夹
 seed: 7
 exp_name: 'radar_bev'  
-exp_dir: 'log_radar_Mountain' #TODO  改变存储路径
+exp_dir: 'log_radar_Sports' #TODO2  改变存储路径  #['Library', 'Mountain', 'Sports']
 sampling_timesteps: 10
 bev_fold: 'new_merge_bev_radar' 
 bev_poses_path: 'new_merge_bev_radar.txt'
 
 train:
     dataset: 'Hercules_radar' #! 用于判断数据集类用哪个
-    sequence: 'Mountain' #todo 序列
+    sequence: 'Sports' #todo3 序列
     dataroot: '/home/data/ldq/HeRCULES/'  #todo 数据集路径
-    batch_size: 16
+    batch_size: 32
     val_batch_size: 16
     image_size: [32, 32]
     original_image_size: [32, 32]
@@ -22,7 +22,7 @@ train:
     restart_num: 5
     lr: 5e-4
     weight_decay: 0.01
-    epochs: 151
+    epochs: 201
     ckpt_interval: 2  #! 模型保存的间隔
     num_workers: 16
     eval_interval: 5  #! 模型评估的间隔

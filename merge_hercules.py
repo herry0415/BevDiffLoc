@@ -2,6 +2,8 @@ import os
 import h5py
 import torch
 import cv2
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import numpy as np
 import os.path as osp
 from omegaconf import OmegaConf, DictConfig
@@ -21,7 +23,7 @@ import math
 BASE_DIR = osp.dirname(osp.abspath(__file__))
 
 class Hercules_merge(data.Dataset):
-    def __init__(self, config, split='train', sequence_name='Library'):
+    def __init__(self, config, split='train'):
         if split == 'train':
             self.is_train = True
         else:
@@ -30,8 +32,11 @@ class Hercules_merge(data.Dataset):
         lidar = 'hercules_lidar' #todo 
 
         data_path =  config.train.dataroot
+        print(f'data_path: {data_path}')
 
-        sequence_name='Library'
+        sequence_name = config.train.sequence #todo 
+        print(f'sequence_name: {sequence_name}')
+
         self.sequence_name = sequence_name #['Library', 'Mountain', 'Sports']
 
         self.data_dir = os.path.join(data_path, sequence_name)
@@ -43,15 +48,6 @@ class Hercules_merge(data.Dataset):
         ts = {}
         vo_stats = {}
         self.pcs = []
-
-        # # extrinsic reading
-        # with open(os.path.join(extrinsics_dir, lidar + '.txt')) as extrinsics_file:
-        #     extrinsics = next(extrinsics_file)
-        # G_posesource_laser = build_se3_transform([float(x) for x in extrinsics.split(' ')])
-        # with open(os.path.join(extrinsics_dir, 'ins.txt')) as extrinsics_file:
-        #     extrinsics = next(extrinsics_file)
-
-        # G_posesource_laser = np.linalg.solve(build_se3_transform([float(x) for x in extrinsics.split(' ')]), G_posesource_laser)  # (4, 4)
 
         for seq in seqs:
             #! 不用h5保存了
@@ -124,7 +120,7 @@ class Hercules_merge(data.Dataset):
         mapping = {
             'Library': (['Library_01_Day','Library_02_Night'], ['Library_03_Day']),
             'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
-            'Sports': (['Complex_01_Day','Complex_03_Day'], ['Complex_02_Night'])
+            'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
         }
         return mapping[sequence_name][0] if train else mapping[sequence_name][1]
 
@@ -136,39 +132,47 @@ class Hercules_merge(data.Dataset):
         poses_3_4 = self.poses_3_4[idx_N]
 
         #!设置处理范围
-        x_min, x_max = 0, 100
-        y_min, y_max = -50, 50
-        z_min, z_max = -10, 10  #! 这是z
+        # x_min, x_max = 0, 100
+        # y_min, y_max = -50, 50
+        # z_min, z_max = -10, 10  #! 这是z
 
         
         #todo  Generate BEV_Image 筛选的 XYZ 范围都是 [-50, 50] 筛选的范围要改
-        pointcloud = pointcloud[:, :3] 
-        # 按范围裁剪
-        mask_x = (pointcloud[:, 0] >= x_min) & (pointcloud[:, 0] <= x_max)
-        mask_y = (pointcloud[:, 1] >= y_min) & (pointcloud[:, 1] <= y_max)
-        # mask_z = (pointcloud[:, 2] >= z_min) & (pointcloud[:, 2] <= z_max)
-
-        mask = mask_x & mask_y
-        pointcloud = pointcloud[mask]
+        # Generate BEV_Image
+        pointcloud = pointcloud[:, :3]
+        pointcloud = pointcloud[np.where(np.abs(pointcloud[:,0])<50)[0],:]
+        pointcloud = pointcloud[np.where(np.abs(pointcloud[:,1])<50)[0],:]
+        pointcloud = pointcloud[np.where(np.abs(pointcloud[:,2])<50)[0],:]
+        pointcloud = pointcloud.astype(np.float32)
         
         return pointcloud, poses_3_4
+        # pointcloud = pointcloud[:, :3] 
+        # # 按范围裁剪
+        # mask_x = (pointcloud[:, 0] >= x_min) & (pointcloud[:, 0] <= x_max)
+        # mask_y = (pointcloud[:, 1] >= y_min) & (pointcloud[:, 1] <= y_max)
+        # # mask_z = (pointcloud[:, 2] >= z_min) & (pointcloud[:, 2] <= z_max)
+
+        # mask = mask_x & mask_y
+        # pointcloud = pointcloud[mask]
+        
+        # return pointcloud, poses_3_4
 
 if __name__ == '__main__':
+
     cfg = OmegaConf.load('cfgs/hercules_bev.yaml')
     # 假设你有一个配置对象 cfg
-    this_name =  'Sports' # ['Library', 'Mountain', 'Sports']
-    dataset = Hercules_merge(config=cfg, split='train', sequence_name=this_name)
+    dataset = Hercules_merge(config=cfg, split='train')
     
     merged_pointcloud = o3d.geometry.PointCloud()
     merged_x = []
     merged_y = []
+
     # all_pointcloud = []
     all_poses = []
     voxel_size = 0.4
-    image_path = '/home/data/ldq/HeRCULES/Library/merge_bev/'  # 更新保存路径 
+    image_path = f'/home/data/ldq/HeRCULES/{cfg.train.sequence}/merge_bev/'  # 更新保存路径 
     # image_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev/'  # 更新保存路径 
-
-    pose_path = '/home/data/ldq/HeRCULES/Library/merge_bev.txt'  # 更新pose保存路径
+    pose_path = f'/home/data/ldq/HeRCULES/{cfg.train.sequence}/merge_bev.txt'  # 更新pose保存路径
     # pose_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev.txt'  # 更新pose保存路径
 
     with open(pose_path, 'w', encoding='utf-8'):
@@ -242,7 +246,7 @@ if __name__ == '__main__':
         # bev_img = bev_img.transpose(1, 2, 0)
         
         cv2.imwrite(f"{image_path}{i+1}.png", bev_img)
-        print(f"Saved LiDAR BEV: {image_path}{i+1}.png")
+        # print(f"Saved LiDAR BEV: {image_path}{i+1}.png")
         with open(pose_path, 'a') as file:
             file.write(f"{curx} {cury} {yaw_random}\n")
         

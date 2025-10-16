@@ -9,8 +9,9 @@ import time
 import pstats
 import cProfile
 import torch.nn as nn
+import sys
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2, 3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 # os.environ["MAIN_PROCESS_PORT"] = "29501" 
 from hydra.utils import instantiate
 import datetime
@@ -326,6 +327,17 @@ def save_train_details_partial(cfg, exp_dir):
         f.write(f"===== Train Details =====\n")
         f.write(f"Timestamp: {ts}\n\n")
 
+        # 记录命令行指令
+         # ===== 记录命令行指令（包括 accelerate launch） =====
+        f.write("===== Command Line =====\n")
+        try:
+            # 获取父进程完整命令（例如 accelerate launch …）
+            parent = psutil.Process(os.getppid())
+            full_cmd = " ".join(parent.cmdline())
+        except Exception as e:
+            # 回退：仅保存当前进程的 sys.argv
+            full_cmd = " ".join(sys.argv)
+
         # 保存部分关键信息
         f.write(f"ckpt: {cfg.ckpt}\n")
         f.write(f"seed: {cfg.seed}\n")
@@ -348,5 +360,6 @@ if __name__ == '__main__':
     # oxford_bev.yaml / nclt_bev.yaml
     # conf = OmegaConf.load('cfgs/oxford_bev.yaml')
     conf = OmegaConf.load('cfgs/hercules_radar_bev.yaml')
+    # conf = OmegaConf.load('cfgs/hercules_bev.yaml')
     # conf = OmegaConf.load('cfgs/nclt_bev.yaml')
     train_fn(conf)

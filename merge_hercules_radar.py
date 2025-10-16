@@ -30,13 +30,16 @@ class Hercules_merge_radar(data.Dataset):
         radar = 'hercules_radar' #todo 
 
         data_path =  config.train.dataroot
-
+        print(f'data_path: {data_path}')
+        sequence_name = config.train.sequence
         self.sequence_name = sequence_name #['Library', 'Mountain', 'Sports']
-
+        print(f'sequence_name: {self.sequence_name}')
+        
         self.data_dir = os.path.join(data_path, sequence_name)
         
          # 根据 sequence_name 和 train/val 设置序列
         seqs = self._get_sequences(sequence_name, self.is_train)
+        print(f'loading sequence:{seqs}')
 
         ps = {}
         ts = {}
@@ -153,11 +156,10 @@ class Hercules_merge_radar(data.Dataset):
         return pointcloud, poses_3_4
 
 if __name__ == '__main__':
-    cfg = OmegaConf.load('cfgs/hercules_bev.yaml')
+    cfg = OmegaConf.load('cfgs/hercules_radar_bev.yaml')
     # 假设你有一个配置对象 cfg
-    this_name =  'Sports' # ['Library', 'Mountain', 'Sports']
 
-    dataset = Hercules_merge_radar(config=cfg, split='train', sequence_name=this_name) # ['Library', 'Mountain', 'Sports']
+    dataset = Hercules_merge_radar(config=cfg, split='train') # ['Library', 'Mountain', 'Sports']
 
     merged_pointcloud = o3d.geometry.PointCloud()
     merged_x = []
@@ -165,10 +167,10 @@ if __name__ == '__main__':
     # all_pointcloud = []
     all_poses = []
     voxel_size = 0.4
-    image_path = f'/home/data/ldq/HeRCULES/{this_name}/new_merge_bev_radar/'  #todo  更新保存路径 
+    image_path = f'/home/data/ldq/HeRCULES/{cfg.train.sequence}/new_merge_bev_radar/'  #todo  更新保存路径 
     # image_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev/'  #todo 更新保存路径 
 
-    pose_path = f'/home/data/ldq/HeRCULES/{this_name}/new_merge_bev_radar.txt'  #todo 更新pose保存路径
+    pose_path = f'/home/data/ldq/HeRCULES/{cfg.train.sequence}/new_merge_bev_radar.txt'  #todo 更新pose保存路径
     # pose_path = '/home/data/ldq/HeRCULES/Library/new_merge_bev.txt'  #todo  更新pose保存路径
 
     with open(pose_path, 'w', encoding='utf-8'):

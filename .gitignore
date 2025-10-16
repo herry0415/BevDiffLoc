@@ -1,5 +1,16 @@
-# 忽略日志和输出
+# 忽略所有日志文件
 *.log
+
+# 忽略模型权重文件
 *.pth
-log/
-log_radar/
+
+# 忽略 log 文件夹
+log*/
+
+# 忽略压缩包和一些比较大的库
+spvnas/
+*.rar
+*.pth
+*.tar
+*.zip
+*.jgz

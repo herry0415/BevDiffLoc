@@ -11,6 +11,7 @@ import torch
 import random
 import numpy as np
 import os.path as osp
+from sklearn.neighbors import KDTree
 from copy import deepcopy
 from torch.utils import data
 from datasets.projection import getBEV, new_getBEV
@@ -40,7 +41,6 @@ class Hercules_BEV_Radar(data.Dataset):
 
         self.data_dir = osp.join(data_path,sequence_name)
 
-        # extrinsics_dir = osp.join(BASE_DIR, 'robotcar_sdk', 'extrinsics')
 
         # decide which sequences to use
         seqs = self._get_sequences(sequence_name, self.is_train)
@@ -53,43 +53,92 @@ class Hercules_BEV_Radar(data.Dataset):
         self.bev_poses = []
         self.merge_num = config.train.merge_num
 
-        # # extrinsic reading
-        # with open(os.path.join(extrinsics_dir, lidar + '.txt')) as extrinsics_file:
-        #     extrinsics = next(extrinsics_file)
-        # G_posesource_laser = build_se3_transform([float(x) for x in extrinsics.split(' ')])
-        # with open(os.path.join(extrinsics_dir, 'ins.txt')) as extrinsics_file:
-        #     extrinsics = next(extrinsics_file)
-        #     G_posesource_laser = np.linalg.solve(build_se3_transform([float(x) for x in extrinsics.split(' ')]), G_posesource_laser)
+        #! 通过lidar找到对应radar代码进行训练 
+        self.lidar_files = []
+        self.radar_files = []
         
         for seq in seqs:
-            seq_dir = os.path.join(self.data_dir, seq)
-            # read the image timestamps
-            # h5_path = osp.join(seq_dir, lidar + '_' + 'False.h5')
-
-            # bev_path = osp.join(seq_dir, bev)
-            # bev_poses_path = osp.join(seq_dir, bev_poses)
-            # if not os.path.isfile(h5_path):
-            print('interpolate ' + seq)
-            pose_file_path = os.path.join(seq_dir, 'PR_GT/newContinental_gt.txt') # PR_GT/newContinental_gt.txt
-            ts_raw = np.loadtxt(pose_file_path, dtype=np.int64, usecols=0) # float读取数字丢精度
+            seq_dir = os.path.join(self.data_dir, seq)         
+           
+            lidar_pose_file_path = os.path.join(seq_dir, 'PR_GT/Aeva_gt.txt')
+        
+            ts_raw = np.loadtxt(lidar_pose_file_path, dtype=np.int64, usecols=0)
             ts[seq] = ts_raw
+            lidar_ts = ts_raw
             
-            pose_file = np.loadtxt(pose_file_path) #保证pose值不变
-            p = poses_to_matrices(pose_file) # (n,4,4) #毫米波雷达坐标系
-            # ps[seq] = np.reshape(p[:, :3, :], (len(p), -1))     #  (n, 12)
-            # p = np.asarray([np.dot(pose, G_posesource_laser) for pose in p])  # (n, 4, 4)
+            lidar_pose_file = np.loadtxt(lidar_pose_file_path)
+            p = poses_to_matrices(lidar_pose_file) # (n,4,4) #激光雷达坐标系
+            ps[seq] = np.reshape(p[:, :3, :], (len(p), -1))     #  (n, 12)
+            
+            radar_file_path = os.path.join(seq_dir, 'PR_GT/newContinental_gt.txt')
+            radar_ts= np.loadtxt(radar_file_path, dtype=np.int64, usecols=0)
+            radar_pose_file = np.loadtxt(radar_file_path)
 
-            ps[seq] = np.reshape(p[:, :3, :], (len(p), -1))  # (n, 12)
+            lidar_xy = self.get_xy(lidar_pose_file)
+            radar_xy = self.get_xy(radar_pose_file)
+            
+            #build kdtree to find match
+            lidar_files = [os.path.join(seq_dir, 'LiDAR/np8Aeva', str(t) + '.bin') for t in lidar_ts]
+            radar_files = [os.path.join(seq_dir, 'Radar/multi_frame_w7', str(t)+'_multi_w7' + '.bin') for t in radar_ts]
+            
+            tree_radar = KDTree(radar_xy)
+            dists, idxs = tree_radar.query(lidar_xy, k=1)  # for each lidar -> nearest radar
+            idxs = idxs.ravel()
+            dists = dists.ravel()
+                # filter by distance threshold
+            for li, ridx in enumerate(idxs):
+                dist = float(dists[li])
+                # print(dist)
+
+                lf = lidar_files[li]
+                rf = radar_files[ridx]
+                # check existence of files
+                if os.path.exists(lf) and os.path.exists(rf):
+                    self.lidar_files.append(lf)
+                    self.radar_files.append(rf)
+                else:
+                    # 缺文件则略过并打印警告
+                    if not os.path.exists(lf): print(f"Missing LIDAR file: {lf}")
+                    if not os.path.exists(rf): print(f"Missing RADAR file: {rf}")
+            
             vo_stats[seq] = {'R': np.eye(3), 't': np.zeros(3), 's': 1}
 
-            if self.is_train:
-                # self.pcs.extend([osp.join(seq_dir, 'LiDAR/np8Aeva', '{:d}.bin'.format(t)) for t in ts[seq]])
-                self.pcs.extend(os.path.join(seq_dir, 'Radar/multi_frame_w7', str(t)+'_multi_w7' + '.bin') for t in ts[seq])
-                vo_stats[seq] = {'R': np.eye(3), 't': np.zeros(3), 's': 1}
-            else:
-                # self.pcs.extend(os.path.join(seq_dir, 'LiDAR/np8Aeva', str(t) + '.bin') for t in ts[seq])
-                self.pcs.extend(os.path.join(seq_dir, 'Radar/multi_frame_w7', str(t)+'_multi_w7' + '.bin') for t in ts[seq])
-                vo_stats[seq] = {'R': np.eye(3), 't': np.zeros(3), 's': 1}
+        poses = np.empty((0, 12))
+        for p in ps.values():
+            poses = np.vstack((poses, p))
+
+        pose_stats_filename = os.path.join(self.data_dir, self.sequence_name + '_radar'+'_pose_stats.txt')
+        # pose_max_min_filename = os.path.join(self.data_dir, self.sequence_name + '_lidar'+ '_pose_max_min.txt')
+
+        # for seq in seqs:
+        #     seq_dir = os.path.join(self.data_dir, seq)
+        #     # read the image timestamps
+        #     # h5_path = osp.join(seq_dir, lidar + '_' + 'False.h5')
+
+        #     # bev_path = osp.join(seq_dir, bev)
+        #     # bev_poses_path = osp.join(seq_dir, bev_poses)
+        #     # if not os.path.isfile(h5_path):
+        #     print('interpolate ' + seq)
+        #     pose_file_path = os.path.join(seq_dir, 'PR_GT/newContinental_gt.txt') # PR_GT/newContinental_gt.txt
+        #     ts_raw = np.loadtxt(pose_file_path, dtype=np.int64, usecols=0) # float读取数字丢精度
+        #     ts[seq] = ts_raw
+            
+        #     pose_file = np.loadtxt(pose_file_path) #保证pose值不变
+        #     p = poses_to_matrices(pose_file) # (n,4,4) #毫米波雷达坐标系
+        #     # ps[seq] = np.reshape(p[:, :3, :], (len(p), -1))     #  (n, 12)
+        #     # p = np.asarray([np.dot(pose, G_posesource_laser) for pose in p])  # (n, 4, 4)
+
+        #     ps[seq] = np.reshape(p[:, :3, :], (len(p), -1))  # (n, 12)
+        #     vo_stats[seq] = {'R': np.eye(3), 't': np.zeros(3), 's': 1}
+
+        #     if self.is_train:
+        #         # self.pcs.extend([osp.join(seq_dir, 'LiDAR/np8Aeva', '{:d}.bin'.format(t)) for t in ts[seq]])
+        #         self.pcs.extend(os.path.join(seq_dir, 'Radar/multi_frame_w7', str(t)+'_multi_w7' + '.bin') for t in ts[seq])
+        #         vo_stats[seq] = {'R': np.eye(3), 't': np.zeros(3), 's': 1}
+        #     else:
+        #         # self.pcs.extend(os.path.join(seq_dir, 'LiDAR/np8Aeva', str(t) + '.bin') for t in ts[seq])
+        #         self.pcs.extend(os.path.join(seq_dir, 'Radar/multi_frame_w7', str(t)+'_multi_w7' + '.bin') for t in ts[seq])
+        #         vo_stats[seq] = {'R': np.eye(3), 't': np.zeros(3), 's': 1}
 
         if self.is_train:
             #! 处理bev图像 因为之前把两个序列的bev图像放在一起了
@@ -111,12 +160,6 @@ class Hercules_BEV_Radar(data.Dataset):
                 self.bev.append(osp.join(bev_path, f"{i+1}.png"))
 
         # read / save pose normalization information
-        poses = np.empty((0, 12))
-        for p in ps.values():
-            poses = np.vstack((poses, p))
-
-        pose_stats_filename = os.path.join(self.data_dir, self.sequence_name + '_radar'+'_pose_stats.txt')
-        # pose_max_min_filename = os.path.join(self.data_dir, self.sequence_name + '_lidar'+ '_pose_max_min.txt')
         
         if self.is_train:
             self.mean_t = np.mean(poses[:, [3, 7, 11]], axis=0)  # (3,)
@@ -185,12 +228,18 @@ class Hercules_BEV_Radar(data.Dataset):
         mapping = {
             'Library': (['Library_01_Day','Library_02_Night'], ['Library_03_Day']),
             'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
-            'Sports': (['Complex_01_Day','Complex_03_Day'], ['Complex_02_Night'])
+            'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
         }
         return mapping[sequence_name][0] if train else mapping[sequence_name][1]
+    
+    def get_xy(self, pose_file):
+        pose = poses_to_matrices(pose_file) # (n,4,4)
+        xy = pose[:,:2, 3]
+        return xy
 
     def __getitem__(self, idx_N):
-        scan_path = self.pcs[idx_N]
+        # scan_path = self.pcs[idx_N]
+        scan_path = self.radar_files[idx_N]
         pointcloud = np.fromfile(scan_path, dtype=np.float32).reshape(-1, 8)   
         pointcloud = np.concatenate((pointcloud[:, :3], pointcloud[:, 5:6]), axis=1) # [N, 4] xyz intensity
         pointcloud = np.concatenate((pointcloud, np.zeros((len(pointcloud), 1))), axis=1)
@@ -263,3 +312,5 @@ class Hercules_BEV_Radar(data.Dataset):
         #! 当前帧位姿标签 [x, y, yaw]
         #! 多帧随机 BEV 图像增强，模型输入 (self.merge_num, 3, H, W) -> (1, 3, H, W)
         #! 对应多帧增强的位姿标签，监督信息
+
+    

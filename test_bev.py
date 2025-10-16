@@ -5,6 +5,7 @@
 """
 
 import time
+import sys
 import matplotlib
 import datetime
 import os.path as osp
@@ -196,6 +197,10 @@ def save_test_details(cfg, exp_dir, epoch):
         f.write(f"===== Test Details =====\n")
         f.write(f"Timestamp: {ts}\n\n")
 
+        # 记录命令行指令
+        f.write("===== Command Line =====\n")
+        f.write(" ".join(sys.argv) + "\n\n")
+
         # 保存主要配置信息
         f.write(f"ckpt: {cfg.ckpt}\n")
         f.write(f"seed: {cfg.seed}\n")
@@ -223,6 +228,7 @@ def save_test_details(cfg, exp_dir, epoch):
 if __name__ == '__main__':
     # oxford_bev.yaml / nclt_bev.yaml / 
     conf = OmegaConf.load('cfgs/hercules_bev.yaml')
+    # conf = OmegaConf.load('cfgs/hercules_radar_bev.yaml')
     LOG_FOUT = open(os.path.join(conf.exp_dir, 'log.txt'), 'w')
     LOG_FOUT.write(str(conf) + '\n')
     val_writer = SummaryWriter(os.path.join(conf.exp_dir, 'valid'))
